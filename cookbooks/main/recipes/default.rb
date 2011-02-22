@@ -24,4 +24,5 @@ require_recipe "thinking_sphinx"
 
 require_recipe "red5"
 require_recipe "delayed_job"
+require_recipe "wkhtmltopdf"
 
