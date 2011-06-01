@@ -6,6 +6,10 @@
 if node[:instance_role] == "solo" || (node[:instance_role] == "util" && node[:name] !~ /^(mongodb|redis|memcache)/)
   node[:applications].each do |app_name,data|
 
+    execute "monit reload" do
+      action :nothing
+    end
+
     template "/etc/monit.d/delayed_job.#{app_name}.monitrc" do
       source "dj.monitrc.erb"
       owner "root"
@@ -17,11 +21,7 @@ if node[:instance_role] == "solo" || (node[:instance_role] == "util" && node[:na
         :worker_name => "delayed_job",
         :framework_env => node[:environment][:framework_env]
       })
-      notifies :run, "execute[monit reload]"
-    end
-
-    execute "monit reload" do
-      action :nothing
+      notifies :run, resources("execute[monit reload]")
     end
   end
 end

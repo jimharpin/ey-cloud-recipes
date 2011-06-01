@@ -38,6 +38,10 @@ if ['solo', 'app', 'app_master'].include?(node[:instance_role])
       action :create
     end
 
+    execute "monit reload" do
+      action :nothing
+    end
+
     template "/etc/monit.d/sphinx.#{app_name}.monitrc" do
       source "sphinx.monitrc.erb"
       owner node[:owner_name]
@@ -48,11 +52,7 @@ if ['solo', 'app', 'app_master'].include?(node[:instance_role])
         :user => node[:owner_name],
         :env => node[:environment][:framework_env],
       })
-      notifies :run, "execute[monit reload]"
-    end
-
-    execute "monit reload" do
-      action :nothing
+      notifies :run, resources("execute[monit reload]")
     end
 
     template "/data/#{app_name}/shared/config/sphinx.yml" do
