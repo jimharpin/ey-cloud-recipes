@@ -3,48 +3,25 @@
 # Recipe:: default
 #
  
-if ['solo', 'app', 'app_master'].include?(node[:instance_role])
- 
-  # be sure to replace "app_name" with the name of your application.
-  run_for_app("evatool_production2") do |app_name, data|
-  
-    worker_name = "delayed_job"
-    
-    # The symlink is created in /data/app_name/current/tmp/pids -> /data/app_name/shared/pids, but shared/pids doesn't seem to be?
-    directory "/data/#{app_name}/shared/pids" do
-      owner node[:owner_name]
-      group node[:owner_name]
-      mode 0755
-    end
- 
-    template "/etc/monit.d/delayed_job_worker.#{app_name}.monitrc" do
-      source "delayed_job_worker.monitrc.erb"
-      #owner node[:owner_name]
-      #group node[:owner_name]
+if node[:instance_role] == "solo" || (node[:instance_role] == "util" && node[:name] !~ /^(mongodb|redis|memcache)/)
+  node[:applications].each do |app_name,data|
+
+    template "/etc/monit.d/delayed_job.#{app_name}.monitrc" do
+      source "dj.monitrc.erb"
       owner "root"
       group "root"
       mode 0644
       variables({
         :app_name => app_name,
         :user => node[:owner_name],
-        :worker_name => worker_name,
+        :worker_name => "delayed_job",
         :framework_env => node[:environment][:framework_env]
       })
+      notifies :run, "execute[monit reload]"
     end
-    
-    bash "monit-reload-restart" do
-       user "root"
-       code "pkill -9 monit && monit"
-    end
-      
-  end
-  
- 
-end
 
-#execute "delayed_job worker" do
-#  command "/data/mlpa/current/script/delayed_job start"
-#  action :run
-#  user 'deploy'
-#  not_if "pgrep -f delayed_job"  
-#end
+    execute "monit reload" do
+      action :nothing
+    end
+  end
+end
