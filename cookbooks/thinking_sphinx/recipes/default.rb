@@ -7,7 +7,7 @@ require 'pp'
 if ['solo', 'app', 'app_master'].include?(node[:instance_role])
 
   # be sure to replace "app_name" with the name of your application.
-  run_for_app("evatool_production2") do |app_name, data|
+  run_for_app("evatool") do |app_name, data|
   
     directory "/var/run/sphinx" do
       owner node[:owner_name]
@@ -16,6 +16,13 @@ if ['solo', 'app', 'app_master'].include?(node[:instance_role])
     end
 
     directory "/var/log/engineyard/sphinx/#{app_name}" do
+      recursive true
+      owner node[:owner_name]
+      group node[:owner_name]
+      mode 0755
+    end
+
+    directory "/data/#{app_name}/shared/config/sphinx" do
       recursive true
       owner node[:owner_name]
       group node[:owner_name]
@@ -38,8 +45,14 @@ if ['solo', 'app', 'app_master'].include?(node[:instance_role])
       mode 0644
       variables({
         :app_name => app_name,
-        :user => node[:owner_name]
+        :user => node[:owner_name],
+        :env => node[:environment][:framework_env],
       })
+      notifies :run, "execute[monit reload]"
+    end
+
+    execute "monit reload" do
+      action :nothing
     end
 
     template "/data/#{app_name}/shared/config/sphinx.yml" do
@@ -52,6 +65,5 @@ if ['solo', 'app', 'app_master'].include?(node[:instance_role])
         :user => node[:owner_name]
       })
     end
-  
   end
 end
